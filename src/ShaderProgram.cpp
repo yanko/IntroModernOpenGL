@@ -5,25 +5,16 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
-//-----------------------------------------------------------------------------
-// Constructor
-//-----------------------------------------------------------------------------
 ShaderProgram::ShaderProgram()
 	: mHandle(0)
 {}
 
-//-----------------------------------------------------------------------------
-// Destructor
-//-----------------------------------------------------------------------------
 ShaderProgram::~ShaderProgram()
 {
 	// Delete the program
 	glDeleteProgram(mHandle);
 }
 
-//-----------------------------------------------------------------------------
-// Loads vertex and fragment shaders
-//-----------------------------------------------------------------------------
 bool ShaderProgram::loadShaders(const char* vsFilename, const char* fsFilename)
 {
 	string vsString = fileToString(vsFilename);
@@ -65,10 +56,6 @@ bool ShaderProgram::loadShaders(const char* vsFilename, const char* fsFilename)
 	return true;
 }
 
-//-----------------------------------------------------------------------------
-// Opens and reads contents of ASCII file to a string.  Returns the string.
-// Not good for very large files.
-//-----------------------------------------------------------------------------
 string ShaderProgram::fileToString(const string& filename)
 {
 	std::stringstream ss;
@@ -94,18 +81,12 @@ string ShaderProgram::fileToString(const string& filename)
 	return ss.str();
 }
 
-//-----------------------------------------------------------------------------
-// Activate the shader program
-//-----------------------------------------------------------------------------
 void ShaderProgram::use()
 {
 	if (mHandle > 0)
 		glUseProgram(mHandle);
 }
 
-//-----------------------------------------------------------------------------
-// Checks for shader compiler errors
-//-----------------------------------------------------------------------------
 void  ShaderProgram::checkCompileErrors(GLuint shader, ShaderType type)
 {
 	int status = 0;
@@ -141,44 +122,29 @@ void  ShaderProgram::checkCompileErrors(GLuint shader, ShaderType type)
 
 }
 
-//-----------------------------------------------------------------------------
-// Returns the active shader program
-//-----------------------------------------------------------------------------
 GLuint ShaderProgram::getProgram() const
 {
 	return mHandle;
 }
 
-//-----------------------------------------------------------------------------
-// Sets a glm::vec2 shader uniform
-//-----------------------------------------------------------------------------
 void ShaderProgram::setUniform(const GLchar* name, const glm::vec2& v)
 {
 	GLint loc = getUniformLocation(name);
 	glUniform2f(loc, v.x, v.y);
 }
 
-//-----------------------------------------------------------------------------
-// Sets a glm::vec3 shader uniform
-//-----------------------------------------------------------------------------
 void ShaderProgram::setUniform(const GLchar* name, const glm::vec3& v)
 {
 	GLint loc = getUniformLocation(name);
 	glUniform3f(loc, v.x, v.y, v.z);
 }
 
-//-----------------------------------------------------------------------------
-// Sets a glm::vec4 shader uniform
-//-----------------------------------------------------------------------------
 void ShaderProgram::setUniform(const GLchar* name, const glm::vec4& v)
 {
 	GLint loc = getUniformLocation(name);
 	glUniform4f(loc, v.x, v.y, v.z, v.w);
 }
 
-//-----------------------------------------------------------------------------
-// Sets a glm::mat4 shader uniform
-//-----------------------------------------------------------------------------
 void ShaderProgram::setUniform(const GLchar* name, const glm::mat4& m)
 {
 	GLint loc = getUniformLocation(name);
@@ -190,10 +156,6 @@ void ShaderProgram::setUniform(const GLchar* name, const glm::mat4& m)
 	glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(m));
 }
 
-//-----------------------------------------------------------------------------
-// Returns the uniform identifier given it's string name.
-// NOTE: Shader must be currently active first.
-//-----------------------------------------------------------------------------
 GLint ShaderProgram::getUniformLocation(const GLchar* name)
 {
 	std::map<string, GLint>::iterator it = mUniformLocations.find(name);
