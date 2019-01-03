@@ -195,7 +195,7 @@ bool initOpenGL()
 	}
 	else
 	{
-		gWindow = glfwCreateWindow(gWindowWidth, gWindowHeight, APP_TITLE, NULL, NULL);
+		gWindow = glfwCreateWindow(gWindowWidth, gWindowHeight, APP_TITLE, NULL, NULL); 
 	}
 
 	if (gWindow == NULL)
