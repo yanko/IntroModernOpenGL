@@ -131,9 +131,7 @@ int main()
 		texture1.bind(0);
 		//texture2.bind(1); 
 
-		glm::mat4 model = glm::mat4(1.0f);
-		glm::mat4 view = glm::mat4(1.0f);;
-		glm::mat4 projection = glm::mat4(1.0f);
+		glm::mat4 model(1.0f), view, projection;
 
 		cubeAngle += (float)(deltaTime * 50.0f);
 		if (cubeAngle >= 360.0f) cubeAngle = 0.0f;
