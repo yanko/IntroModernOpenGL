@@ -8,6 +8,7 @@
 
 #include "ShaderProgram.h"
 #include "Texture2D.h"
+#include "Camera.h"
 
 
 const char* APP_TITLE = "Introduction to Modern OpenGL - Hello Shader";
@@ -17,10 +18,17 @@ GLFWwindow* gWindow = NULL;
 bool gFullscreen = false;
 bool gWirefame = false;
 const std::string texture1Filename = "textures/wooden_crate.jpg";
-//const std::string texture2Filename = "textures/crate.jpg";
+const std::string texture2Filename = "textures/grid.jpg";
+
+OrbitCamera orbicCamera;
+float gYaw = 0.0f;
+float gPitch = 0.0f;
+float gRadius = 10.f;
+const float MOUSE_SENSITIVITY = 0.25f;
 
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_onFramebufferSize(GLFWwindow* window, int width, int height);
+void glfw_onMouseMove(GLFWwindow* window, double posX, double posY);
 void showFPS(GLFWwindow* window);
 bool initOpenGL();
 
@@ -111,8 +119,8 @@ int main()
 	Texture2D texture1;
 	texture1.loadTexture(texture1Filename, true);
 
-	//Texture2D texture2;
-	//texture2.loadTexture(texture2Filename, true);
+	Texture2D texture2;
+	texture2.loadTexture(texture2Filename, true);
 
 	double lastTime = glfwGetTime();
 	float cubeAngle = 0.0f;
@@ -129,21 +137,15 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		texture1.bind(0);
-		//texture2.bind(1); 
 
 		glm::mat4 model(1.0f), view, projection;
+		
+		orbicCamera.setLookAt(cubePos);
+		orbicCamera.rotate(gYaw, gPitch);
+		orbicCamera.setRadius(gRadius);
 
-		cubeAngle += (float)(deltaTime * 50.0f);
-		if (cubeAngle >= 360.0f) cubeAngle = 0.0f;
-
-		model = glm::translate(model, cubePos) * glm::rotate(model, glm::radians(cubeAngle), glm::vec3(0.5f, 1.0f, 0.0f));
-
-		glm::vec3 camPos(0.0f, 0.0f, 0.0f);
-		glm::vec3 targetPos(0.0f, 0.0f, -1.0f);
-		glm::vec3 up(0.0f, 1.0f, 0.0f);
-
-		view = glm::lookAt(camPos, targetPos, up); 
-
+		model = glm::translate(model, cubePos);
+		view = orbicCamera.getViewMatrix();
 		projection = glm::perspective(glm::radians(45.0f), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 100.0f);
 
 		shaderProgram.use();
@@ -154,6 +156,15 @@ int main()
 		
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+		texture2.bind(0);
+		glm::vec3 floorPos = glm::vec3(0.0f, -1.0f, 5.0f);
+		//floorPos.y = -1.0f;
+		model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.f, 0.01f, 10.0f));
+		shaderProgram.setUniform("model", model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
+
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(gWindow);
@@ -208,6 +219,11 @@ bool initOpenGL()
 	glfwMakeContextCurrent(gWindow);
 	//glfwSwapInterval(0);
 
+	// Set the required callback functions
+	glfwSetKeyCallback(gWindow, glfw_onKey);
+	glfwSetFramebufferSizeCallback(gWindow, glfw_onFramebufferSize);
+	glfwSetCursorPosCallback(gWindow, glfw_onMouseMove);
+
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
@@ -215,11 +231,7 @@ bool initOpenGL()
 		glfwTerminate();
 		return false;
 	}
-
-	// Set the required callback functions
-	glfwSetKeyCallback(gWindow, glfw_onKey);
-	glfwSetFramebufferSizeCallback(gWindow, glfw_onFramebufferSize);
-
+	
 	const GLubyte* renderer = glGetString(GL_RENDERER);
 	const GLubyte* version = glGetString(GL_VERSION);
 	std::cout << "Renderer: " << renderer << std::endl;
@@ -254,6 +266,30 @@ void glfw_onFramebufferSize(GLFWwindow* window, int width, int height)
 	gWindowWidth = width;
 	gWindowHeight = height;
 	glViewport(0, 0, gWindowWidth, gWindowHeight);
+}
+
+void glfw_onMouseMove(GLFWwindow* window, double posX, double posY)
+{
+	static glm::vec2 lastMousePos = glm::vec2(0, 0);
+
+	// Update angles based on Left Mouse Button input to orbit around the cube
+	if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_LEFT) == 1)
+	{
+		// each pixel represents a quarter of degree rotation (this is our mouse sensitivity)
+		gYaw -= ((float)posX - lastMousePos.x) * MOUSE_SENSITIVITY;
+		gPitch += ((float)posY - lastMousePos.y) * MOUSE_SENSITIVITY;
+	}
+
+	// Change orbit camera radius with the Right Mouse Button
+	if (glfwGetMouseButton(gWindow, GLFW_MOUSE_BUTTON_RIGHT) == 1)
+	{
+		float dx = 0.01f * ((float)posX - lastMousePos.x);
+		float dy = 0.01f * ((float)posY - lastMousePos.y);
+		gRadius += dx - dy;
+	}
+
+	lastMousePos.x = (float)posX;
+	lastMousePos.y = (float)posY;
 }
 
 void showFPS(GLFWwindow* window)
