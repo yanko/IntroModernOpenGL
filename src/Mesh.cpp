@@ -176,25 +176,26 @@ void Mesh::draw()
 
 void Mesh::initBuffers()
 {
+	glGenVertexArrays(1, &mVAO);
 	glGenBuffers(1, &mVBO);
+
+	glBindVertexArray(mVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, mVBO);
 	glBufferData(GL_ARRAY_BUFFER, mVertices.size() * sizeof(Vertex), &mVertices[0], GL_STATIC_DRAW);
 
-	glGenVertexArrays(1, &mVAO);
-	glBindVertexArray(mVAO);
-
-	// position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(0));
+	// Vertex Positions
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 
-	// noramls attribute
+	// Normals attribute
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
 
-	// tex coord
+	// Vertex Texture Coords
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(6 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(2);
 
-	glBindVertexArray(0); // unbind to make sure other code doesn't change it
+	// unbind to make sure other code does not change it somewhere else
+	glBindVertexArray(0);
 }
 
