@@ -1,31 +1,32 @@
 #include <iostream>
 #include <sstream>
-
+#include <string>
 #define GLEW_STATIC
-#include "GL/glew.h"
+#include "GL/glew.h"	// Important - this header must come before glfw3 header
 #include "GLFW/glfw3.h"
-
+#include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 
 #include "ShaderProgram.h"
 #include "Texture2D.h"
 #include "Camera.h"
+#include "Mesh.h"
 
 
-const char* APP_TITLE = "Introduction to Modern OpenGL - Camera";
+// Global Variables
+const char* APP_TITLE = "Introduction to Modern OpenGL - Loading OBJ Models";
 int gWindowWidth = 1024;
 int gWindowHeight = 768;
 GLFWwindow* gWindow = NULL;
-bool gFullscreen = false;
 bool gWireframe = false;
-const std::string texture1Filename = "textures/wooden_crate.jpg";
-const std::string texture2Filename = "textures/grid.jpg";
 
-FPSCamera fpsCamera(glm::vec3(0.0f, 0.0f, 5.0f));
+
+FPSCamera fpsCamera(glm::vec3(0.0f, 3.0f, 10.0f));
 const double ZOOM_SENSITIVITY = -3.0;
 const float MOVE_SPEED = 5.0; // units per second
 const float MOUSE_SENSITIVITY = 0.1f;
 
+// Function prototypes
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_onFramebufferSize(GLFWwindow* window, int width, int height);
 void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY);
@@ -33,100 +34,55 @@ void update(double elapsedTime);
 void showFPS(GLFWwindow* window);
 bool initOpenGL();
 
+//-----------------------------------------------------------------------------
+// Main Application Entry Point
+//-----------------------------------------------------------------------------
 int main()
 {
 	if (!initOpenGL())
 	{
+		// An error occured
 		std::cerr << "GLFW initialization failed" << std::endl;
 		return -1;
 	}
 
-	GLfloat vertices[] = {
-		// position		 // tex coords
-
-	   // front face
-	   -1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-		1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-		1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
-	   -1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-	   -1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-		1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-
-		// back face
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-		 1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-		-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-		 1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-
-		 // left face
-		 -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		 -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-		 -1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
-		 -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		 -1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-		 -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-
-		 // right face
-		  1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-		  1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-		  1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-		  1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
-		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-
-		  // top face
-		 -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		  1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-		  1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
-		 -1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
-		 -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-		  1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
-
-		  // bottom face
-		 -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-		  1.0f, -1.0f,  1.0f, 1.0f, 1.0f,
-		 -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-		 -1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
-		  1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
-	};
-
-	glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, -5.0f);
-	glm::vec3 floorPos = glm::vec3(0.0f, -1.0f, 5.0f);
-
-	GLuint vbo, vao;
-
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	
-	// position
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(0));
-	glEnableVertexAttribArray(0);
-
-	// tex coord
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-	glEnableVertexAttribArray(1);
-
-	glBindVertexArray(0);					// unbind to make sure other code doesn't change it
-	
 	ShaderProgram shaderProgram;
 	shaderProgram.loadShaders("shaders/basic.vert", "shaders/basic.frag");
 
-	Texture2D texture1;
-	texture1.loadTexture(texture1Filename, true);
+	// Load meshes and textures
+	const int numModels = 4;
+	Mesh mesh[numModels];
+	Texture2D texture[numModels];
 
-	Texture2D texture2;
-	texture2.loadTexture(texture2Filename, true);
+	mesh[0].loadOBJ("models/crate.obj");
+	mesh[1].loadOBJ("models/woodcrate.obj");
+	mesh[2].loadOBJ("models/robot.obj");
+	mesh[3].loadOBJ("models/floor.obj");
+
+	texture[0].loadTexture("textures/crate.jpg", true);
+	texture[1].loadTexture("textures/woodcrate_diffuse.jpg", true);
+	texture[2].loadTexture("textures/robot_diffuse.jpg", true);
+	texture[3].loadTexture("textures/tile_floor.jpg", true);
+
+	// Model positions
+	glm::vec3 modelPos[] = {
+		glm::vec3(-2.5f, 1.0f, 0.0f),	// crate1
+		glm::vec3(2.5f, 1.0f, 0.0f),	// crate2
+		glm::vec3(0.0f, 0.0f, -2.0f),	// robot
+		glm::vec3(0.0f, 0.0f, 0.0f)		// floor
+	};
+
+	// Model scale
+	glm::vec3 modelScale[] = {
+		glm::vec3(1.0f, 1.0f, 1.0f),	// crate1
+		glm::vec3(1.0f, 1.0f, 1.0f),	// crate2
+		glm::vec3(1.0f, 1.0f, 1.0f),	// robot
+		glm::vec3(10.0f, 1.0f, 10.0f)	// floor
+	};
 
 	double lastTime = glfwGetTime();
-	float cubeAngle = 0.0f;
 
+	// Rendering loop
 	while (!glfwWindowShouldClose(gWindow))
 	{
 		showFPS(gWindow);
@@ -134,125 +90,117 @@ int main()
 		double currentTime = glfwGetTime();
 		double deltaTime = currentTime - lastTime;
 
+		// Poll for and process events
 		glfwPollEvents();
 		update(deltaTime);
 
+		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		texture1.bind(0);
+		glm::mat4 model(1.0), view(1.0), projection(1.0);
 
-		glm::mat4 model(1.0f), view, projection;
-		
-		model = glm::translate(model, cubePos);
-		
+		// Create the View matrix
 		view = fpsCamera.getViewMatrix();
 
-		projection = glm::perspective(glm::radians(fpsCamera.getFOV()), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 100.0f);
+		// Create the projection matrix
+		projection = glm::perspective(glm::radians(fpsCamera.getFOV()), (float)gWindowWidth / (float)gWindowHeight, 0.1f, 200.0f);
 
+		// Must be called BEFORE setting uniforms because setting uniforms is done
+		// on the currently active shader program.
 		shaderProgram.use();
 
-		shaderProgram.setUniform("model", model);
+		// Pass the matrices to the shader
 		shaderProgram.setUniform("view", view);
 		shaderProgram.setUniform("projection", projection);
-		
-		glBindVertexArray(vao);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
 
-		texture2.bind(0);
-		//floorPos.y = -1.0f;
-		model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.f, 0.01f, 10.0f));
-		shaderProgram.setUniform("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
+		// Render the scene
+		for (int i = 0; i < numModels; i++)
+		{
+			model = glm::translate(glm::mat4(1.0), modelPos[i]) * glm::scale(glm::mat4(1.0), modelScale[i]);
+			shaderProgram.setUniform("model", model);
 
+			texture[i].bind(0);		// set the texture before drawing.  Our simple OBJ mesh loader does not do materials yet.
+			mesh[i].draw();			// Render the OBJ mesh
+			texture[i].unbind(0);
+		}
 
-		glBindVertexArray(0);
-
+		// Swap front and back buffers
 		glfwSwapBuffers(gWindow);
 
 		lastTime = currentTime;
 	}
 
-
-	glDeleteVertexArrays(1, &vao);
-	glDeleteBuffers(1, &vbo);
-
 	glfwTerminate();
+
 	return 0;
 }
 
+//-----------------------------------------------------------------------------
+// Initialize GLFW and OpenGL
+//-----------------------------------------------------------------------------
 bool initOpenGL()
 {
+	// Intialize GLFW 
+	// GLFW is configured.  Must be called before calling any GLFW functions
 	if (!glfwInit())
 	{
-		std::cerr << "initOpenGL GLFW initialization failed" << std::endl;
+		// An error occured
+		std::cerr << "GLFW initialization failed" << std::endl;
 		return false;
 	}
-	std::cout << "initOpenGL GLFW initialization successfull" << std::endl;
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-	//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);	// forward compatible with newer versions of OpenGL as they become available but not backward compatible (it will not run on devices that do not support OpenGL 3.3
 
-	if (gFullscreen)
-	{
-		GLFWmonitor* pMonitor = glfwGetPrimaryMonitor();
-		const GLFWvidmode* pVmode = glfwGetVideoMode(pMonitor);
-		if (pVmode != NULL)
-		{
-			gWindow = glfwCreateWindow(pVmode->width, pVmode->height, APP_TITLE, pMonitor, NULL);
-		}
-	}
-	else
-	{
-		gWindow = glfwCreateWindow(gWindowWidth, gWindowHeight, APP_TITLE, NULL, NULL); 
-	}
 
+	// Create an OpenGL 3.3 core, forward compatible context window
+	gWindow = glfwCreateWindow(gWindowWidth, gWindowHeight, APP_TITLE, NULL, NULL);
 	if (gWindow == NULL)
 	{
-		std::cerr << "initOpenGL Failed to create GLFW window" << std::endl;
+		std::cerr << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();
 		return false;
 	}
-	
-	glfwMakeContextCurrent(gWindow);
-	//glfwSwapInterval(0);
 
+	// Make the window's context the current one
+	glfwMakeContextCurrent(gWindow);
+
+	// Initialize GLEW
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
-		std::cerr << "initOpenGL GLEW initialization failed" << std::endl;
-		glfwTerminate();
+		std::cerr << "Failed to initialize GLEW" << std::endl;
 		return false;
 	}
-	const GLubyte* renderer = glGetString(GL_RENDERER);
-	const GLubyte* version = glGetString(GL_VERSION);
-	std::cout << "Renderer: " << renderer << std::endl;
-	std::cout << "OpenGL version supported: " << version << std::endl;
-	std::cout << "OpenGL Initialization Complete" << std::endl;
 
 	// Set the required callback functions
 	glfwSetKeyCallback(gWindow, glfw_onKey);
 	glfwSetFramebufferSizeCallback(gWindow, glfw_onFramebufferSize);
 	glfwSetScrollCallback(gWindow, glfw_onMouseScroll);
-	
+
+	// Hides and grabs cursor, unlimited movement
 	glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPos(gWindow, gWindowWidth / 2.0, gWindowHeight / 2.0);
 
 	glClearColor(0.23f, 0.38f, 0.47f, 1.0f);
 
+	// Define the viewport dimensions
 	glViewport(0, 0, gWindowWidth, gWindowHeight);
 	glEnable(GL_DEPTH_TEST);
 
 	return true;
 }
 
+//-----------------------------------------------------------------------------
+// Is called whenever a key is pressed/released via GLFW
+//-----------------------------------------------------------------------------
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) 
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
-		
+
 	if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
 	{
 		gWireframe = !gWireframe;
@@ -261,9 +209,11 @@ void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
-	//std::cout << "glfw_onKey key:"<< key << std::endl;
 }
 
+//-----------------------------------------------------------------------------
+// Is called when the window is resized
+//-----------------------------------------------------------------------------
 void glfw_onFramebufferSize(GLFWwindow* window, int width, int height)
 {
 	gWindowWidth = width;
@@ -271,6 +221,9 @@ void glfw_onFramebufferSize(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, gWindowWidth, gWindowHeight);
 }
 
+//-----------------------------------------------------------------------------
+// Called by GLFW when the mouse wheel is rotated
+//-----------------------------------------------------------------------------
 void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY)
 {
 	double fov = fpsCamera.getFOV() + deltaY * ZOOM_SENSITIVITY;
@@ -280,6 +233,9 @@ void glfw_onMouseScroll(GLFWwindow* window, double deltaX, double deltaY)
 	fpsCamera.setFOV((float)fov);
 }
 
+//-----------------------------------------------------------------------------
+// Update stuff every frame
+//-----------------------------------------------------------------------------
 void update(double elapsedTime)
 {
 	// Camera orientation
@@ -315,6 +271,10 @@ void update(double elapsedTime)
 		fpsCamera.move(MOVE_SPEED * (float)elapsedTime * -fpsCamera.getUp());
 }
 
+//-----------------------------------------------------------------------------
+// Code computes the average frames per second, and also the average time it takes
+// to render one frame.  These stats are appended to the window caption bar.
+//-----------------------------------------------------------------------------
 void showFPS(GLFWwindow* window)
 {
 	static double previousSeconds = 0.0;
