@@ -14,7 +14,7 @@
 
 
 // Global Variables
-const char* APP_TITLE = "Introduction to Modern OpenGL - Loading OBJ Models";
+const char* APP_TITLE = "Introduction to Modern OpenGL - Basic Lighting 1";
 int gWindowWidth = 1024;
 int gWindowHeight = 768;
 GLFWwindow* gWindow = NULL;
